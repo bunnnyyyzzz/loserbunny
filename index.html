@@ -5,76 +5,63 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>loserbunny</title>
 <style>
-  :root{
-    --bg:#03030a;
-    --moon:#cfe8ff;
-    --fog1:rgba(255,255,255,0.035);
-    --fog2:rgba(255,255,255,0.07);
-    --whisper:#dfe8e8;
-  }
-  html,body{height:100%;margin:0;background:radial-gradient(circle at 20% 10%, #071021 0%, var(--bg) 25%, #000 100%);font-family:Verdana, Geneva, Tahoma, sans-serif;color:var(--whisper);overflow:hidden}
+  /* Dark red-tinted cinematic theme — optimized for GitHub Pages */
+  :root{--bg:#050005;--red:#9b111e;--fog:#ffdedf}
+  html,body{height:100%;margin:0;background:radial-gradient(circle at 20% 10%, #15030a 0%, var(--bg) 35%, #000 100%);font-family:Verdana, Geneva, Tahoma, sans-serif;color:#eee;overflow:hidden}
 
   .stage{height:100vh;display:flex;align-items:center;justify-content:center}
-  .scene{position:relative;width:100%;max-width:1200px;height:82vh;max-height:920px;border-radius:6px;overflow:hidden}
+  .scene{position:relative;width:100%;max-width:1400px;height:86vh;max-height:920px;border-radius:6px;overflow:hidden}
 
-  /* distant moon glow */
-  .moon{position:absolute;right:18%;top:6%;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle at 40% 30%, rgba(207,232,255,0.12), transparent 40%);filter:blur(36px);opacity:.9;pointer-events:none}
+  /* canvas covers whole scene */
+  canvas#fogCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-  /* slow drifting layered fog (CSS-only) */
-  .fog{position:absolute;inset:0;pointer-events:none}
-  .fog .layer{position:absolute;left:-10%;top:-20%;width:120%;height:140%;background:linear-gradient(180deg,var(--fog2),transparent);opacity:0.6;filter:blur(28px);animation:drift 40s linear infinite}
-  .fog .layer.b{left:-15%;top:-30%;width:140%;height:160%;opacity:0.45;filter:blur(44px);animation-duration:56s}
-  .fog .layer.c{left:-5%;top:-10%;width:110%;height:120%;opacity:0.32;filter:blur(18px);animation-duration:28s}
-  @keyframes drift{0%{transform:translateX(-10%)}50%{transform:translateX(10%)}100%{transform:translateX(-10%)}}
+  /* sky glow and vignette */
+  .glow{position:absolute;right:18%;top:6%;width:460px;height:460px;border-radius:50%;background:radial-gradient(circle at 40% 30%, rgba(255,120,120,0.08), transparent 40%);filter:blur(36px);opacity:.9;pointer-events:none}
+  .vignette{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 220px rgba(0,0,0,0.78)}
 
-  /* ground shadow */
-  .ground{position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.72));pointer-events:none}
+  /* ground anchor */
+  .ground{position:absolute;left:0;right:0;bottom:0;height:26%;background:linear-gradient(180deg,transparent,rgba(0,0,0,0.88));pointer-events:none}
 
-  /* bunny wrapper and approach animation */
-  .bunny-wrap{position:absolute;right:6%;bottom:10%;width:420px;height:620px;transform-origin:center bottom;pointer-events:none}
-  .bunny{width:100%;height:100%;display:block;filter:contrast(90%)}
-  @keyframes approach{0%{transform:translateY(8%) scale(0.56)}40%{transform:translateY(4%) scale(0.8)}100%{transform:translateY(-2%) scale(1.12)}}
-  .bunny-anim{animation:approach 26s ease-in-out infinite}
+  /* bunny SVG container */
+  .bunny-wrap{position:absolute;right:6%;bottom:10%;width:480px;height:720px;transform-origin:center bottom;pointer-events:none;z-index:6}
+  .bunny{width:100%;height:100%;display:block;filter:contrast(92%)}
 
-  /* rim layer for subtle moonlight on left */
-  .rim{position:absolute;right:6%;bottom:10%;width:420px;height:620px;pointer-events:none;opacity:0.12}
+  /* approach animation: slow scale up and slight translate to simulate coming closer */
+  @keyframes approach{0%{transform:translateY(8%) scale(0.56)}40%{transform:translateY(4%) scale(0.82)}100%{transform:translateY(-2%) scale(1.14)}}
+  .bunny-anim{animation:approach 22s ease-in-out infinite alternate}
 
-  /* whisper text UI */
-  .controls{position:fixed;left:14px;top:14px;font-size:13px;color:#9aa4ad}
-  .mute{background:transparent;border:1px solid rgba(255,255,255,0.04);color:#9aa4ad;padding:8px 10px;border-radius:6px;cursor:pointer}
+  /* rim highlight layer */
+  .rim{position:absolute;right:6%;bottom:10%;width:480px;height:720px;pointer-events:none;opacity:0.12;z-index:7}
 
-  .whisper{position:absolute;left:6%;bottom:6%;font-size:22px;color:var(--whisper);opacity:0.95;letter-spacing:0.6px}
-  .whisper .glitch{position:relative;display:inline-block}
-  .whisper .glitch::before,.whisper .glitch::after{content:attr(data-text);position:absolute;left:0;top:0;opacity:0.12}
-  .whisper .glitch::before{transform:translate(2px,-2px)}
-  .whisper .glitch::after{transform:translate(-2px,2px)}
+  /* whisper controls */
+  .controls{position:fixed;left:14px;top:14px;font-size:13px;color:#c9bdbd;z-index:20}
+  .btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.04);color:#fff;padding:8px 10px;border-radius:6px;cursor:pointer;margin-left:8px}
 
-  /* smaller screens */
-  @media (max-width:900px){.bunny-wrap{width:340px;height:500px;right:5%}}
-  @media (max-width:520px){.bunny-wrap{display:none}.whisper{font-size:16px}}
+  .hint{position:absolute;left:6%;bottom:6%;font-size:20px;color:rgba(255,255,255,0.9);letter-spacing:0.6px;z-index:10}
+
+  /* responsive */
+  @media (max-width:900px){.bunny-wrap{width:360px;height:540px;right:5%}}
+  @media (max-width:520px){.bunny-wrap{display:none}.hint{font-size:14px}}
 </style>
 </head>
 <body>
-  <div class="controls">Press <strong>M</strong> to mute/unmute whisper — <button class="mute" id="toggle">Mute</button></div>
+  <div class="controls">Click anywhere to start audio — then the whisper will play. <button id="startBtn" class="btn">Start</button><button id="muteBtn" class="btn">Mute</button></div>
   <div class="stage">
-    <div class="scene" role="img" aria-label="A night sky with drifting fog and a shadowy bunny slowly approaching from the right">
+    <div class="scene" role="img" aria-label="Night scene with fog and a shadowy bunny approaching from the right">
 
-      <div class="moon" aria-hidden="true"></div>
-      <div class="fog" aria-hidden="true">
-        <div class="layer a"></div>
-        <div class="layer b"></div>
-        <div class="layer c"></div>
-      </div>
+      <canvas id="fogCanvas"></canvas>
+      <div class="glow" aria-hidden="true"></div>
+      <div class="vignette" aria-hidden="true"></div>
 
       <div class="ground" aria-hidden="true"></div>
 
       <div class="bunny-wrap" aria-hidden="true">
-        <!-- realistic-looking silhouette built with clean shapes and a faint inner gradient -->
+        <!-- Bunny silhouette SVG -->
         <svg class="bunny bunny-anim" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
           <defs>
             <linearGradient id="shade" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#000" stop-opacity="0.96"/>
-              <stop offset="100%" stop-color="#000" stop-opacity="0.98"/>
+              <stop offset="0%" stop-color="#000" stop-opacity="0.98"/>
+              <stop offset="100%" stop-color="#000" stop-opacity="0.96"/>
             </linearGradient>
           </defs>
           <g>
@@ -90,7 +77,7 @@
         <svg class="rim" viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
           <defs>
             <radialGradient id="r" cx="25%" cy="30%">
-              <stop offset="0%" stop-color="#dfe9e9" stop-opacity="0.12" />
+              <stop offset="0%" stop-color="#ffdddd" stop-opacity="0.18" />
               <stop offset="100%" stop-color="#000" stop-opacity="0" />
             </radialGradient>
           </defs>
@@ -100,96 +87,128 @@
         </svg>
       </div>
 
-      <div class="whisper" aria-hidden="true"><span class="glitch" data-text="loser... loser...">loser... loser...</span></div>
+      <div class="hint" aria-hidden="true">loser... loser...</div>
     </div>
   </div>
 
+  <!-- Audio file placeholder: place your whisper.mp3 in same folder as this HTML. -->
+  <audio id="whisperAudio" preload="auto">
+    <source src="whisper.mp3" type="audio/mpeg">
+    <!-- If you don't have a file yet, the page will still show visuals; clicking Start will try to play. -->
+  </audio>
+
 <script>
-// Lightweight WebAudio + SpeechSynthesis whisper combo.
-// Uses SpeechSynthesis when available for human-like whisper; falls back to generated ambient noise + periodic muffled whisper-like tones.
+/* Fog particle system (Canvas) + audio start on user interaction.
+   - Drop 'whisper.mp3' into same folder as this file.
+   - Click the Start button or anywhere to begin audio (required for autoplay policies).
+*/
 (function(){
-  const toggle = document.getElementById('toggle');
-  let muted = false;
+  // Canvas fog
+  const canvas = document.getElementById('fogCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
 
-  function setButton(){ toggle.textContent = muted ? 'Unmute' : 'Mute'; }
-  setButton();
+  function resize(){
+    W = canvas.width = canvas.clientWidth = canvas.offsetWidth;
+    H = canvas.height = canvas.clientHeight = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
 
-  toggle.addEventListener('click', ()=>{ muted = !muted; setButton(); updateAudio(); });
-  window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='m'){ muted = !muted; setButton(); updateAudio(); }});
+  // Particle constructor
+  function Particle(x,y,r,alpha,drift){
+    this.x = x; this.y = y; this.r = r; this.alpha = alpha; this.drift = drift;
+    this.vx = (Math.random()*0.3-0.15)*drift; this.vy = -(0.02+Math.random()*0.12)*drift;
+    this.life = 200 + Math.random()*300;
+  }
+  Particle.prototype.update = function(){
+    this.x += this.vx; this.y += this.vy; this.life -= 1;
+    // gentle horizontal sinus
+    this.x += Math.sin((this.life)/50 + this.r) * 0.08;
+  }
+  Particle.prototype.draw = function(ctx){
+    const g = ctx.createRadialGradient(this.x,this.y,this.r*0.1,this.x,this.y,this.r);
+    g.addColorStop(0, `rgba(255,210,210,${this.alpha})`);
+    g.addColorStop(1, `rgba(20,8,8,0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
+  }
 
-  // SpeechSynthesis approach
-  let synthAvailable = 'speechSynthesis' in window;
-  let synthTimer;
+  function spawn(count){
+    for(let i=0;i<count;i++){
+      const x = Math.random()*W;
+      const y = H - Math.random()* (H*0.15) + Math.random()*80 - 40; // start low near ground
+      const r = 60 + Math.random()*180;
+      const a = 0.04 + Math.random()*0.12;
+      const d = 0.6 + Math.random()*1.4;
+      particles.push(new Particle(x,y,r,a,d));
+    }
+  }
 
-  // WebAudio ambient noise (always present if synth not used)
-  let audioCtx, noiseNode, gainNode;
-  function initAudio(){
+  function step(){
+    ctx.clearRect(0,0,W,H);
+    // draw mild red tint overlay
+    ctx.fillStyle = 'rgba(25,6,9,0.12)'; ctx.fillRect(0,0,W,H);
+
+    // update and draw particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.update(); p.draw(ctx);
+      if(p.life<=0 || p.y<-200 || p.x<-200 || p.x>W+200) particles.splice(i,1);
+    }
+    // keep count steady
+    if(particles.length < 70) spawn(6);
+
+    requestAnimationFrame(step);
+  }
+  spawn(90);
+  requestAnimationFrame(step);
+
+  // Audio handling — requires user gesture to play in many browsers
+  const audio = document.getElementById('whisperAudio');
+  const startBtn = document.getElementById('startBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  let started = false;
+
+  function startAudio(){
+    if(started) return; started = true;
+    // try to play audio; if missing file, user will see console error
+    audio.currentTime = 0; audio.play().catch(e=>console.warn('Autoplay blocked or file missing',e));
+    startBtn.textContent = 'Playing';
+  }
+
+  function toggleMute(){
+    audio.muted = !audio.muted;
+    muteBtn.textContent = audio.muted ? 'Unmute' : 'Mute';
+  }
+
+  startBtn.addEventListener('click', ()=>{ startAudio(); });
+  document.addEventListener('click', ()=>{ startAudio(); }, {once:true});
+  muteBtn.addEventListener('click', toggleMute);
+
+  // keyboard shortcuts
+  window.addEventListener('keydown', (e)=>{
+    if(e.key.toLowerCase()==='m'){ toggleMute(); }
+    if(e.key.toLowerCase()==='s'){ startAudio(); }
+  });
+
+  // accessibility: if audio element has no source, add a fallback soft whisper using oscillator
+  audio.addEventListener('error', ()=>{
+    console.warn('Audio file not found or failed to load. Using fallback ambient whisper.');
     try{
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // create noise
-      const bufferSize = 2 * audioCtx.sampleRate;
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for(let i=0;i<bufferSize;i++) data[i] = (Math.random()*2-1)*0.25; // low volume
-      noiseNode = audioCtx.createBufferSource();
-      noiseNode.buffer = buffer; noiseNode.loop = true;
-      gainNode = audioCtx.createGain(); gainNode.gain.value = 0.02;
-      noiseNode.connect(gainNode).connect(audioCtx.destination);
-      noiseNode.start(0);
-    }catch(e){console.warn('Audio init failed',e)}
-  }
-
-  function speakWhisperLine(text){
-    if(muted) return;
-    if(synthAvailable){
-      // create slightly breathy whisper effect using low rate/pitch and soft volume
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.8; u.pitch = 0.6; u.volume = 0.4;
-      // choose an English voice if possible
-      const voices = window.speechSynthesis.getVoices();
-      if(voices && voices.length) u.voice = voices.find(v=>/en|us|uk/i.test(v.lang)) || voices[0];
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    }
-  }
-
-  function startWhisperLoop(){
-    // periodic whispers with slight random delays for creepiness
-    function loop(){
-      if(muted) return;
-      speakWhisperLine('loser...');
-      // after 1s speak second part softly
-      setTimeout(()=>{ if(!muted) speakWhisperLine('loser...'); }, 1200 + Math.random()*800);
-      // schedule next loop
-      synthTimer = setTimeout(loop, 4200 + Math.random()*2600);
-    }
-    loop();
-  }
-
-  function stopWhisperLoop(){
-    if(synthTimer) clearTimeout(synthTimer);
-    if(synthAvailable) window.speechSynthesis.cancel();
-  }
-
-  function updateAudio(){
-    if(muted){ stopWhisperLoop(); if(gainNode) gainNode.gain.setValueAtTime(0, audioCtx.currentTime); return; }
-    // ensure audio context started (user gesture may be required on some browsers)
-    if(!audioCtx) initAudio();
-    if(gainNode) gainNode.gain.setValueAtTime(0.02, audioCtx.currentTime);
-    if(synthAvailable) startWhisperLoop();
-  }
-
-  // try to prime voices (some browsers load voices asynchronously)
-  if(synthAvailable){ window.speechSynthesis.onvoiceschanged = ()=>{}; }
-
-  // start automatically but respect autoplay policies: user gesture may be required for audio
-  // we still initialize silent noise so visuals work without user interaction
-  initAudio();
-  // try start whisper loop; if brower blocks audio, user can press M or click mute toggle to enable
-  setTimeout(()=>{ updateAudio(); }, 800);
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = 120; gain.gain.value = 0.0008;
+      osc.connect(gain); gain.connect(ctx.destination);
+      // small periodic pulses to mimic whisper
+      osc.start();
+      setTimeout(()=>{ osc.stop(); }, 60000);
+    }catch(e){console.warn('Fallback audio failed',e)}
+  });
 
 })();
 </script>
 </body>
 </html>
-
